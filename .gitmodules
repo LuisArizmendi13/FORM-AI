@@ -1,0 +1,6 @@
+[submodule "videopose3d"]
+	path = videopose3d
+	url = https://github.com/facebookresearch/VideoPose3D.git
+[submodule "detectron2"]
+	path = detectron2
+	url = https://github.com/facebookresearch/detectron2.git

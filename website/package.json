@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@dainprotocol/cli": "^1.1.30"
+  }
+}

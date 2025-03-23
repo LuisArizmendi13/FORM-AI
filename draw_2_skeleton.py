@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import os
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -36,7 +37,7 @@ def draw_skeleton(pose_strong, pose_weak, ax=None):
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    ax.set_title('3D Human Pose in Human3.6M Format')
+    ax.set_title('comparison of movement of gold vs test exercise (one rep)', y=1.0, pad=35)
     ax.view_init(elev=0, azim=90)
     ax.set_xlim(-1, 1)
     ax.set_ylim(-1, 1)
@@ -54,14 +55,14 @@ def interpolate_my_skeleton(pose_list, target_length):
 
 if __name__ == '__main__':
     points_path_gold = sys.argv[1]
-    poses_gold = np.load(points_path_gold, allow_pickle=True)
+    # poses_gold = np.load(points_path_gold, allow_pickle=True)
     points_path_test = sys.argv[2]
-    poses_test = np.load(points_path_test, allow_pickle=True)
+    # poses_test = np.load(points_path_test, allow_pickle=True)
     # target_length = max(len(poses_gold), len(poses_test))
     # poses_gold = interpolate_my_skeleton(poses_gold, target_length)
     # poses_test = interpolate_my_skeleton(poses_test, target_length)
 
-    matching_path, gold_longer = dtw(points_path_gold, points_path_test, justpath=True)
+    matching_path, gold_longer, poses_gold, poses_test = dtw(points_path_gold, points_path_test, justpath=True)
     gold_and_test = [[], []]
     gold_and_test[1 - gold_longer] = (poses_gold, poses_test)[1 - gold_longer]
 
@@ -72,8 +73,19 @@ if __name__ == '__main__':
     poses_gold, poses_test = gold_and_test
     assert len(poses_gold) == len(poses_test)
 
-    fig = plt.figure()
+    # fig = plt.figure()
+    fig = plt.figure(figsize=(10, 8))  # Increased figure size
     ax = fig.add_subplot(111, projection='3d')
+
+    # Add these adjustments right after figure creation
+    fig.tight_layout(pad=2.0)  # Control padding around subplot
+    fig.subplots_adjust(
+        left=0.05,  # Reduce left margin
+        right=0.95,  # Reduce right margin
+        top=0.9,    # Keep space for title
+        bottom=0.05 # Reduce bottom margin
+    )
+
     ax.set_xlim(-1, 1)
     ax.set_ylim(-1, 1)
     ax.set_zlim(-1, 1)
@@ -81,5 +93,7 @@ if __name__ == '__main__':
     def update(frame):
         draw_skeleton(pose_strong=poses_gold[frame], pose_weak=poses_test[frame], ax=ax)
 
-    anim = FuncAnimation(fig=fig, func=update, frames=len(poses_gold), interval=500)
-    anim.save('skeletons.gif', writer=PillowWriter(fps=10))
+    plt.tight_layout()
+    anim = FuncAnimation(fig=fig, func=update, frames=len(poses_gold), interval=100)
+    anim_name = f'plots/{os.path.basename(points_path_gold)}-{os.path.basename(points_path_test)}-skeletons.gif'
+    anim.save(anim_name, writer=PillowWriter(fps=10))

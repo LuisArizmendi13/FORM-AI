@@ -3,43 +3,69 @@
 import numpy as np
 import argparse
 
+LABELS = [
+    'Hip',
+    'Right Hip',
+    'Right Knee',
+    'Right Foot',
+    'Left Hip',
+    'Left Knee',
+    'Left Foot',
+    'Spine',
+    'Thorax',
+    'Neck',
+    'Head',
+    'Left Shoulder',
+    'Left Elbow',
+    'Left Wrist',
+    'Right Shoulder',
+    'Right Elbow',
+    'Right Wrist'
+]
+LEFT_IDX = [4, 5, 6, 11, 12, 13]
+RIGHT_IDX = [1, 2, 3, 14, 15, 16]
+
 def distance(pose_g, pose_t, point_idx):
     x_diff = pose_g[point_idx][0] - pose_t[point_idx][0]
     y_diff = pose_g[point_idx][1] - pose_t[point_idx][1]
     z_diff = pose_g[point_idx][2] - pose_t[point_idx][2]
     return np.sqrt(x_diff**2 + y_diff**2 + z_diff**2)
 
-def reorient(sequence):
-    left_avg = np.mean(sequence[:, 1::2, :], axis=(0, 1))
-    right_avg = np.mean(sequence[:, 2::2, :], axis=(0, 1))
-
-    theta_left = np.arctan2(left_avg[1], left_avg[0])
-    theta_right = np.arctan2(right_avg[1], right_avg[0])
-    angle = -(theta_left + theta_right) / 2
-
-    # Z
-    """rotation_matrix = np.array([
-        [np.cos(angle), -np.sin(angle), 0],
-        [np.sin(angle), np.cos(angle), 0],
-        [0, 0, 1]
-    ])"""
-
-    # Y
-    rotation_matrix = np.array([
-        [np.cos(angle), 0, np.sin(angle)],
-        [0, 1, 0],
-        [-np.sin(angle), 0, np.cos(angle)]
-    ])
-
-    # X
-    """rotation_matrix = np.array([
-        [1, 0, 0],
-        [0, np.cos(angle), -np.sin(angle)],
-        [0, np.sin(angle), np.cos(angle)]
-    ])"""
-
+def reorient(sequence, dumb=False):
     rotated = np.empty_like(sequence)
+
     for i in range(sequence.shape[0]):
+        left_avg = np.mean(sequence[:, 1::2, :], axis=(0, 1))
+        right_avg = np.mean(sequence[:, 2::2, :], axis=(0, 1))
+        # left_avg = np.mean(sequence[i, LEFT_IDX, :], axis=0)
+        # right_avg = np.mean(sequence[i, RIGHT_IDX, :], axis=0)
+
+        theta_left = np.arctan2(left_avg[1], left_avg[0])
+        theta_right = np.arctan2(right_avg[1], right_avg[0])
+
+        angle = -(theta_left + theta_right) / 2
+
+        # Z
+        """rotation_matrix = np.array([
+            [np.cos(angle), -np.sin(angle), 0],
+            [np.sin(angle), np.cos(angle), 0],
+            [0, 0, 1]
+        ])"""
+
+        # Y
+        rotation_matrix = np.array([
+            [np.cos(angle), 0, np.sin(angle)],
+            [0, 1, 0],
+            [-np.sin(angle), 0, np.cos(angle)]
+        ])
+
+        # X
+        """rotation_matrix = np.array([
+            [1, 0, 0],
+            [0, np.cos(angle), -np.sin(angle)],
+            [0, np.sin(angle), np.cos(angle)]
+        ])"""
+
         for j in range(sequence.shape[1]):
             rotated[i, j, :] = sequence[i, j, :] @ rotation_matrix.T
 
@@ -89,7 +115,7 @@ def dtw(path_g, path_t, justpath=False):
                               key = lambda x : x[0])
             warp_path.append((i, j))
 
-        return reversed(warp_path), g > t
+        return reversed(warp_path), g > t, gold_sequence, test_sequence
 
     def dp(idx):
         my_cost = np.full((g, t), 9999999, dtype=float)
@@ -137,4 +163,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     assert args.gold is not None or args.test is not None, 'missing paths to gold and test poses'
     res = dtw(args.gold, args.test)
-    print(res)
+    # print(res)

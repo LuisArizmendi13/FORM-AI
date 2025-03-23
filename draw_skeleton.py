@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -50,4 +51,4 @@ if __name__ == '__main__':
         draw_skeleton(pose_3d=poses[frame], ax=ax)
 
     anim = FuncAnimation(fig=fig, func=update, frames=len(poses), interval=500)
-    anim.save('skeleton.gif', writer=PillowWriter(fps=10))
+    anim.save(f'plots/{os.path.basename(points_path)}-skeleton.gif', writer=PillowWriter(fps=10))

@@ -45,7 +45,7 @@ def reorient(sequence):
 
     return rotated
 
-def dwt(path_g, path_t):
+def dtw(path_g, path_t, justpath=False):
     gold_sequence = np.load(path_g, allow_pickle=True)
     test_sequence = np.load(path_t, allow_pickle=True)
 
@@ -61,6 +61,35 @@ def dwt(path_g, path_t):
         for j in range(t):
             for k in range(17):
                 dists[i, j, k] = distance(gold_sequence[i], test_sequence[j], k)
+
+    def dp_all():  # no index, uses all indexes
+        my_cost = np.full((g, t), 9999999, dtype=float)
+        my_cost[0, 0] = np.sum(dists[0, 0, :])
+        for j in range(1, t): my_cost[0, j] = np.sum(dists[0, j, :]) + my_cost[0, j - 1]
+        for i in range(1, g): my_cost[i, 0] = np.sum(dists[i, 0, :]) + my_cost[i - 1, 0]
+
+        for i in range(1, g):
+            for j in range(1, t):
+                my_cost[i, j] = np.sum(dists[i, j, :]) + min(
+                    my_cost[i - 1, j],     # Insertion
+                    my_cost[i, j - 1],     # Deletion
+                    my_cost[i - 1, j - 1]  # Match
+                )
+
+        # find the path
+        i, j = g - 1, t - 1
+        warp_path = [(i, j)]
+        while i > 0 or j > 0:
+            if i == 0: j -= 1
+            elif j == 0: i -= 1
+            else:
+                _, i, j = min((my_cost[i - 1, j], i - 1, j),
+                              (my_cost[i, j - 1], i, j - 1),
+                              (my_cost[i - 1, j - 1], i - 1, j - 1),
+                              key = lambda x : x[0])
+            warp_path.append((i, j))
+
+        return reversed(warp_path), g > t
 
     def dp(idx):
         my_cost = np.full((g, t), 9999999, dtype=float)
@@ -95,6 +124,8 @@ def dwt(path_g, path_t):
             out[j] = min(out[j], dists[i, j, idx])
         return out
 
+    if justpath: return dp_all()
+
     sequence_cost = np.zeros((t, 17), dtype=float)
     for k in range(17): sequence_cost[:, k] = dp(k)
     return sequence_cost
@@ -105,5 +136,5 @@ if __name__ == '__main__':
     parser.add_argument('--test', dest='test', type=str, default=None)
     args = parser.parse_args()
     assert args.gold is not None or args.test is not None, 'missing paths to gold and test poses'
-    res = dwt(args.gold, args.test)
+    res = dtw(args.gold, args.test)
     print(res)

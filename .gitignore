@@ -1,10 +1,12 @@
 website/FORMAI/src/classification/mysecrets.py 
-website/FORMAI/src/classification/dataset 
+website/FORMAI/src/classification/dataset/old_videos 
+website/FORMAI/src/classification/dataset/ex 
+website/FORMAI/src/classification/dataset/examples
 website/FORMAI/node_modules 
 website/node_modules 
 website/FORMAI/src/classification/dataset 
 website/FORMAI/src/classification/models 
 __pycache__/  
 dataset_out  
-website/FORMAI/.env.development
+website/FORMAI/.env.development 
 

@@ -10,5 +10,6 @@ else
 
 fi
 
+conda run -n FORM-AI git submodule update --init --recursive
 conda run -n FORM-AI pip install -r requirements.txt
 conda run -n FORM-AI python -m pip install -e detectron2

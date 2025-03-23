@@ -1,5 +1,8 @@
 # should be using python 3.10
 
+# linux requiremnets: ffmpeg, build-essential
+# install: move h36m weights to videopose3d/checkpoint
+
 numpy
 torch==2.5.1
 torchvision==0.20.1

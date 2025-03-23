@@ -13,13 +13,15 @@ const execAsync = promisify(exec);
 const getPhysicalHealthDataConfig: ToolConfig = {
   id: "getPhysicalHealthData",
   name: "Get Physical Health Data",
-  description: "Analyzes an MP4 video and returns a prompt for improving the detected exercise",
+  description: "Analyzes an MP4 video and returns results with images and recommendations",
   input: z.object({
     videoFile: z.string().describe("DAIN storage URL of the uploaded MP4 file"),
   }),
   output: z.object({
-    typeOfExercise: z.string().describe("Detected type of exercise in the video"),
-    prompt: z.string().describe("Prompt for the assistant to respond to"),
+    typeOfExercise: z.string().describe("Detected type of exercise"),
+    followUp: z.string().describe("Suggested improvements or advice"),
+    previewUrl: z.string().describe("URL to skeleton comparison image"),
+    graphUrl: z.string().describe("URL to error graph image"),
   }),
   handler: async ({ videoFile }) => {
     const tempFilePath = path.join(os.tmpdir(), "temp_video.mp4");
@@ -40,50 +42,53 @@ const getPhysicalHealthDataConfig: ToolConfig = {
       });
 
       const scriptPath = path.join(__dirname, "integration.py");
-      const { stdout, stderr } = await execAsync(`python3 "${scriptPath}" "${tempFilePath}"`);
+      const { stdout, stderr } = await execAsync(`python3 "${scriptPath}" "${tempFilePath}"`, {
+        cwd: path.resolve(__dirname, "../../../"), // 🧭 run from root
+      });
 
-      if (stderr) {
-        console.warn("Python script stderr (non-blocking):", stderr);
-      }
+      if (stderr) console.warn("⚠️ Python stderr:", stderr);
 
-      const typeOfExercise = stdout.trim().toLowerCase() || "an unknown exercise";
-
-      // 🧠 Generate prompt for DAIN LLM
-      const prompt = `The person in the video performed a ${typeOfExercise}. What complementary exercises, corrections, or advice would you recommend to improve their fitness and form?`;
+      const lines = stdout.trim().split("\n");
+      const [previewUrl, graphUrl, followUp, typeOfExercise] = lines.slice(-4);
 
       const cardUI = new CardUIBuilder()
-        .title("Exercise Detected")
-        .content(`Detected: **${typeOfExercise}**`)
+        .title("Exercise Analysis")
+        .content(
+          `**Detected Exercise:** ${typeOfExercise}\n\n` +
+          `**Improvement Advice:**\n${followUp}\n\n` +
+          `**Skeleton Comparison:** [View](${previewUrl})\n\n` +
+          `**Error Graph:** [View](${graphUrl})`
+        )
         .build();
 
       return new DainResponse({
-        text: prompt,
+        text: `Detected ${typeOfExercise}. Advice and visuals included.`,
         data: {
           typeOfExercise,
-          prompt,
+          followUp,
+          previewUrl,
+          graphUrl,
         },
         ui: cardUI,
       });
     } catch (error) {
-      console.error("❌ Error in getPhysicalHealthData:", error);
+      console.error("❌ Error in handler:", error);
       return new DainResponse({
-        text: "There was an error processing the video. Please try again.",
+        text: "An error occurred while analyzing the video.",
         data: {
           typeOfExercise: "unknown",
-          prompt: "The exercise could not be detected. What should someone do when no exercise is detected in a video?",
+          followUp: "No suggestions due to an error.",
+          previewUrl: "",
+          graphUrl: "",
         },
         ui: new CardUIBuilder()
           .title("Error")
-          .content("An error occurred while analyzing the video.")
+          .content("There was a problem processing the video.")
           .build(),
       });
     } finally {
-      try {
-        if (fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-      } catch (cleanupErr) {
-        console.warn("Temp cleanup failed:", cleanupErr);
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
       }
     }
   },

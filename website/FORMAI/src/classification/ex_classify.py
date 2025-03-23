@@ -76,7 +76,7 @@ class ExerciseClassifier:
                         label = self.classes[pred.item()]
 
                     frame_class[label] = frame_class.get(label, 0) + 1
-                    print(label)
+                    #print(label)
 
                     # Slide window by dropping the oldest frame
                     clips.pop(0)
@@ -94,7 +94,7 @@ class ExerciseClassifier:
 
 if __name__ == "__main__":
     classifier = ExerciseClassifier()
-    result = classifier.classify_video("dataset/examples/bench.mp4")
+    result = classifier.classify_video("dataset/examples/johncenasquat.mp4")
     print("Final classification:", result)
 
 

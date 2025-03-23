@@ -26,7 +26,7 @@ def generate_error_text(error):
         for bucket in range(3):
             out += '{:.2f}'.format(simplified_error[bucket, j]) + '\t'
         out += '\n'
-    print(out)
+    return out
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -37,4 +37,4 @@ if __name__ == '__main__':
     error = dtw(args.gold, args.test)
     fname = f'{os.path.basename(args.gold)}-{os.path.basename(args.test)}'
     make_nice_graphs(error, fname)
-    generate_error_text(error)
+    return generate_error_text(error)
